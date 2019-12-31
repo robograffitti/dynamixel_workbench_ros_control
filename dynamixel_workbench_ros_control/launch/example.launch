@@ -4,7 +4,7 @@
   <arg name="baud_rate" default="57600" />
   <arg name="file" default="$(find dynamixel_workbench_ros_control)/config/example.yaml" />
 
-  <!-- Husky harware driver -->
+  <!-- Dynamixel Workbench based hardware driver -->
   <node pkg="dynamixel_workbench_ros_control" type="dynamixel_controller_manager_node" name="dynamixel_controller_manager_node">
     <rosparam subst_value="true">
       port: $(arg port)
