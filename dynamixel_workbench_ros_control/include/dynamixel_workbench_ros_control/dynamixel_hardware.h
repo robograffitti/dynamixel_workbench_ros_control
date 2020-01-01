@@ -51,7 +51,7 @@ private:
     double effort_command;
 
     Joint() :
-      position(0), velocity(0), current(0), effort(0), position_command(0), velocity_command(0), effort_command(0)
+      position(0.0), velocity(0.0), current(0.0), effort(0.0), position_command(0.0), velocity_command(0.0), effort_command(0.0)
     { }
   };
   std::vector<Joint> joints_;
