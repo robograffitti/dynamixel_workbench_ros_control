@@ -58,6 +58,7 @@ private:
 
   // Parameters
   // bool is_moving_;
+  bool is_first_;
 
   // ROS node handle
   ros::NodeHandle nh_, private_nh_;
