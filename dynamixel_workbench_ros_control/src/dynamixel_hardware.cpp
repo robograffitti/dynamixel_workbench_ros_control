@@ -342,25 +342,50 @@ namespace dynamixel_workbench_ros_control
 
   void DynamixelHardware::registerControlInterfaces()
   {
+    // ascending order
+    // std::vector<std::pair<uint32_t, std::string>> dynamixel(dynamixel_.size());
+    // int count = 0;
+    // for (auto iter = dynamixel.begin(); iter != dynamixel.end(); iter++)
+    //   {
+    //     for (auto iter = dynamixel_.begin(); iter != dynamixel_.end(); iter++)
+    //       {
+    //         if (count + 1 == iter->second)
+    //           {
+    //             std::pair<uint32_t, std::string> pair(iter->second, iter->first);
+    //             dynamixel[count] = pair; // range : 0, 1, 2, 3, 4
+    //             // ROS_INFO("joint_name : %s, servo ID: %d", iter->second.c_str(), iter->first);
+    //             break;
+    //           }
+    //       }
+    //     count++;
+    //   }
+
+    // resige vector
+    // joints_.resize(dynamixel.size());
+    joints_.resize(dynamixel_.size());
+
     for (auto iter = dynamixel_.begin(); iter != dynamixel_.end(); iter++)
       {
         // initialize joint vector
         Joint joint;
-        joints_.push_back(joint);
+        joints_[iter->second - 1] = joint;
+        ROS_INFO("joint_name : %s, servo ID: %d", iter->first.c_str(), iter->second);
 
         hardware_interface::JointStateHandle joint_state_handle(iter->first.c_str(),
-                                                                &joints_[iter->second].position,
-                                                                &joints_[iter->second].velocity,
-                                                                &joints_[iter->second].effort);
+                                                                &joints_[iter->second - 1].position,
+                                                                &joints_[iter->second - 1].velocity,
+                                                                &joints_[iter->second - 1].effort);
         joint_state_interface_.registerHandle(joint_state_handle);
 
-        hardware_interface::JointHandle position_joint_handle(joint_state_handle, &joints_[iter->second].position_command);
+        hardware_interface::JointHandle position_joint_handle(joint_state_handle, &joints_[iter->second - 1].position_command);
         position_joint_interface_.registerHandle(position_joint_handle);
-        hardware_interface::JointHandle velocity_joint_handle(joint_state_handle, &joints_[iter->second].velocity_command);
+        hardware_interface::JointHandle velocity_joint_handle(joint_state_handle, &joints_[iter->second - 1].velocity_command);
         velocity_joint_interface_.registerHandle(velocity_joint_handle);
-        hardware_interface::JointHandle effort_joint_handle(joint_state_handle, &joints_[iter->second].effort_command);
+        hardware_interface::JointHandle effort_joint_handle(joint_state_handle, &joints_[iter->second - 1].effort_command);
         effort_joint_interface_.registerHandle(effort_joint_handle);
+
       }
+
     registerInterface(&joint_state_interface_);
     registerInterface(&position_joint_interface_);
     registerInterface(&velocity_joint_interface_);
@@ -431,14 +456,17 @@ namespace dynamixel_workbench_ros_control
 
         for(uint8_t index = 0; index < id_cnt; index++)
           {
-            joints_[index].position = dxl_wb_->convertValue2Radian((uint8_t)id_array[index], (int32_t)get_position[index]);
-            joints_[index].velocity = dxl_wb_->convertValue2Velocity((uint8_t)id_array[index], (int32_t)get_velocity[index]);
+            // index 0, 1, 2, 3, 4
+            // joints_ 1, 2, 3, 4, 5
+            // id_array 1, 5, 4, 2, 3
+            joints_[id_array[index]-1].position = dxl_wb_->convertValue2Radian((uint8_t)id_array[index], (int32_t)get_position[index]);
+            joints_[id_array[index]-1].velocity = dxl_wb_->convertValue2Velocity((uint8_t)id_array[index], (int32_t)get_velocity[index]);
             // joints_[index].current = get_current[index];
 
             if (strcmp(dxl_wb_->getModelName((uint8_t)id_array[index]), "XL-320") == 0)
-              joints_[index].effort = dxl_wb_->convertValue2Load((int16_t)get_current[index]);
+              joints_[id_array[index]-1].effort = dxl_wb_->convertValue2Load((int16_t)get_current[index]);
             else
-              joints_[index].effort = dxl_wb_->convertValue2Current((int16_t)get_current[index]);
+              joints_[id_array[index]-1].effort = dxl_wb_->convertValue2Current((int16_t)get_current[index]);
           }
       }
     else if(dxl_wb_->getProtocolVersion() == 1.0f)
@@ -461,9 +489,9 @@ namespace dynamixel_workbench_ros_control
               }
 
             // ID required to get model name
-            joints_[dxl_cnt].position = dxl_wb_->convertValue2Radian((uint8_t)dxl.second, (int32_t)DXL_MAKEWORD(get_all_data[0], get_all_data[1]));
-            joints_[dxl_cnt].velocity = dxl_wb_->convertValue2Velocity((uint8_t)dxl.second, (int32_t)DXL_MAKEWORD(get_all_data[2], get_all_data[3]));
-            joints_[dxl_cnt].effort = dxl_wb_->convertValue2Load(DXL_MAKEWORD(get_all_data[4], get_all_data[5]));
+            joints_[(uint8_t)dxl.second-1].position = dxl_wb_->convertValue2Radian((uint8_t)dxl.second, (int32_t)DXL_MAKEWORD(get_all_data[0], get_all_data[1]));
+            joints_[(uint8_t)dxl.second-1].velocity = dxl_wb_->convertValue2Velocity((uint8_t)dxl.second, (int32_t)DXL_MAKEWORD(get_all_data[2], get_all_data[3]));
+            joints_[(uint8_t)dxl.second-1].effort = dxl_wb_->convertValue2Load(DXL_MAKEWORD(get_all_data[4], get_all_data[5]));
 
             dxl_cnt++;
           }
@@ -484,7 +512,7 @@ namespace dynamixel_workbench_ros_control
       id_array[id_cnt++] = (uint8_t)dxl.second;
 
     for (uint8_t index = 0; index < id_cnt; index++)
-      dynamixel_position[index] = dxl_wb_->convertRadian2Value(id_array[index], joints_[index].position_command);
+      dynamixel_position[index] = dxl_wb_->convertRadian2Value(id_array[index], joints_[id_array[index]-1].position_command);
 
     result = dxl_wb_->syncWrite(SYNC_WRITE_HANDLER_FOR_GOAL_POSITION, id_array, id_cnt, dynamixel_position, 1, &log);
     if (result == false)
