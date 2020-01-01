@@ -7,7 +7,8 @@ namespace dynamixel_workbench_ros_control
     :
     nh_(nh),
     private_nh_(private_nh),
-    joints_(0)
+    joints_(0),
+    is_first_(true)
     // is_moving_(false) // necessary?
   {
     initializeDynamixelHardware();
@@ -467,6 +468,10 @@ namespace dynamixel_workbench_ros_control
               joints_[id_array[index]-1].effort = dxl_wb_->convertValue2Load((int16_t)get_current[index]);
             else
               joints_[id_array[index]-1].effort = dxl_wb_->convertValue2Current((int16_t)get_current[index]);
+
+            if (is_first_ == true)
+              joints_[id_array[index]-1].position_command = joints_[id_array[index]-1].position;
+
           }
       }
     else if(dxl_wb_->getProtocolVersion() == 1.0f)
@@ -513,6 +518,20 @@ namespace dynamixel_workbench_ros_control
 
     for (uint8_t index = 0; index < id_cnt; index++)
       dynamixel_position[index] = dxl_wb_->convertRadian2Value(id_array[index], joints_[id_array[index]-1].position_command);
+
+    // if (is_first_ == true)
+    //   {
+    //     ROS_INFO("First write.");
+    //     for (uint8_t index = 0; index < id_cnt; index++)
+    //       dynamixel_position[index] = dxl_wb_->convertRadian2Value(id_array[index], joints_[id_array[index]-1].position);
+
+    //     is_first_ = false;
+    //   }
+    // else
+    //   {
+    //     for (uint8_t index = 0; index < id_cnt; index++)
+    //       dynamixel_position[index] = dxl_wb_->convertRadian2Value(id_array[index], joints_[id_array[index]-1].position_command);
+    //   }
 
     result = dxl_wb_->syncWrite(SYNC_WRITE_HANDLER_FOR_GOAL_POSITION, id_array, id_cnt, dynamixel_position, 1, &log);
     if (result == false)
